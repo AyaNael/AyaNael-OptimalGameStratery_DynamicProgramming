@@ -17,7 +17,7 @@ public class ManualScene {
 	private Button nextBt, backBt;
 	private int[] coins;
 
-	public Scene createScene(Stage primaryStage, OptimalGameInterface mainGameScene) {
+	public Scene createScene(Stage primaryStage, Main mainGameScene) {
 		// Header Label
 		Label headLb = new Label("Manual Coin Insertion");
 		headLb.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #FFD700;");
@@ -51,16 +51,31 @@ public class ManualScene {
 		nextBt.setDisable(true);
 
 		nextBt.setOnAction(e -> {
-		    validateInput(); // Trigger validation on button click
+		    validateInput(); // Validate input fields
 		    if (errorLb.getText().isEmpty()) { // Proceed if there are no errors
-		        PlayingWayScene playingWayScene = new PlayingWayScene(coins); // Pass coins to next scene
-		        primaryStage.setScene(playingWayScene.createScene(primaryStage, mainGameScene));
+		        try {
+		            PlayingWayScene playingWayScene = new PlayingWayScene(coins, mainGameScene); // Initialize with coins
+		            VBox layout = playingWayScene.createLayout(); // Create the layout for the next scene
+		            Scene nextScene = new Scene(layout, 600, 400); // Adjust dimensions as needed
+		            primaryStage.setScene(nextScene); // Set the new scene
+		        } catch (Exception ex) {
+		            ex.printStackTrace(); // Log any exceptions
+		            errorLb.setText("An error occurred while navigating to the next scene.");
+		        }
 		    }
 		});
 
+
 		// Back Button Styling
 		backBt = createStyledButton("Back");
-		backBt.setOnAction(e -> primaryStage.setScene(mainGameScene.mainScene()));
+		backBt.setOnAction(e -> {
+		    try {
+		        mainGameScene.setLayout(new MainMenuScene(mainGameScene).createLayout()); // Return to the main menu
+		    } catch (Exception ex) {
+		        ex.printStackTrace();
+		        errorLb.setText("An error occurred while returning to the main menu.");
+		    }
+		});
 
 		// VBox Layout
 		VBox vBox = new VBox(15, headLb, numOfCoinsLb, numOfCoinsTf, insertCoins, insertedCoins, errorLb, nextBt,
