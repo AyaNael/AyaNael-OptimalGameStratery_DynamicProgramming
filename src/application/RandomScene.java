@@ -20,7 +20,7 @@ public class RandomScene {
 	private Button okBt, backBt, nextBt;
 	private int[] generatedNumbers; // Array to store generated numbers
 
-	public Scene createScene(Stage primaryStage, OptimalGameInterface mainGameScene) {
+	public Scene createScene(Stage primaryStage, Main mainGameScene) {
 		// Header Label
 		Label headLb = new Label("Random Coin Generation");
 		headLb.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #FFD700;");
@@ -76,12 +76,27 @@ public class RandomScene {
 		nextBt.setDisable(true); // Disable until random numbers are generated successfully
 		nextBt.setStyle(
 				"-fx-background-color: #1E90FF; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px 20px;");
-		nextBt.setOnAction(e -> mainGameScene.showPlayMode(generatedNumbers));
+		nextBt.setOnAction(e -> {
+		    VBox playingWayLayout = new PlayingWayScene(generatedNumbers, mainGameScene).createLayout();
+		    Scene playingWayScene = new Scene(playingWayLayout, 600, 400); // Adjust dimensions as needed
+		    primaryStage.setScene(playingWayScene);
+		});
 		// Back Button Styling
 		backBt = new Button("Back");
 		backBt.setStyle(
 				"-fx-background-color: #FF6347; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px 20px;");
-		backBt.setOnAction(e -> primaryStage.setScene(mainGameScene.mainScene()));
+		backBt.setOnAction(e -> {
+		    try {
+		        System.out.println("Navigating back to main menu...");
+		        mainGameScene.setLayout(new MainMenuScene(mainGameScene).createLayout());
+		    } catch (Exception ex) {
+		        ex.printStackTrace();
+		        errorLabel.setText("An error occurred while navigating back.");
+		    }
+		});
+
+
+
 		// HBox for Range Input
 		HBox rangeHbox = new HBox(10, rangeFromTf, new Label("To"), rangeToTf);
 		rangeHbox.setAlignment(Pos.CENTER);
