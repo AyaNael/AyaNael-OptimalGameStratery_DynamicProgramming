@@ -19,7 +19,7 @@ public class FromFileScene {
     private Button loadFileBt, backBt, nextBt;
     private int[] coins;
 
-    public Scene createScene(Stage primaryStage, OptimalGameInterface mainGameScene) {
+    public Scene createScene(Stage primaryStage, Main mainGameScene) {
         // Header Label
         Label headLb = new Label("Load Coins from File");
         headLb.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #FFD700;");
@@ -47,13 +47,33 @@ public class FromFileScene {
 
         // OK Button
         nextBt = createStyledButton("Next");
-        nextBt.setOnAction(e -> validateInput());
-        nextBt.setDisable(true); // Disable until uploaded file successfully
-        nextBt.setOnAction(e -> mainGameScene.showPlayMode(coins));
+        nextBt.setDisable(true); // Disable until the file is successfully loaded
+        nextBt.setOnAction(e -> {
+            validateInput();
+            if (errorLb.getText().isEmpty()) { // Proceed if there are no errors
+                try {
+                    PlayingWayScene playingWayScene = new PlayingWayScene(coins, mainGameScene); // Pass coins to the next scene
+                    VBox layout = playingWayScene.createLayout();
+                    Scene nextScene = new Scene(layout, 600, 400); // Adjust dimensions as needed
+                    primaryStage.setScene(nextScene); // Navigate to the next scene
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    errorLb.setText("An error occurred while navigating to the next scene.");
+                }
+            }
+        });
 
         // Back Button
         backBt = createStyledButton("Back");
-        backBt.setOnAction(e -> primaryStage.setScene(mainGameScene.mainScene()));
+        backBt.setOnAction(e -> {
+            try {
+                mainGameScene.setLayout(new MainMenuScene(mainGameScene).createLayout()); // Return to the main menu
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                errorLb.setText("An error occurred while returning to the main menu.");
+            }
+        });
+
 
         // vBox Configuration
         VBox vBox = new VBox(15, headLb, numOfCoinsLb, numOfCoinsTf, insertedCoinsTf, loadFileBt, errorLb, nextBt,
