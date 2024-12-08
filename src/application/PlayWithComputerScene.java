@@ -15,6 +15,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -23,21 +24,25 @@ public class PlayWithComputerScene {
 	private int[] coins;
 	private Button[] coinButtons; // Array of buttons for the coins
 	private int playerScore = 0, computerScore = 0;
-	private Label playerScoreLabel, computerScoreLabel, currentPlayerLabel;
+	private Label playerScoreLabel, computerScoreLabel;
 	private VBox playerArea, computerArea; // Areas for chosen coins
 	private Button startButton, showResultsButton, finalResultBt, showStepsBt, playAgainButton, showDbTableBt;
 	private Move[] steps; // Array to store moves for "Show Steps"
 	private int currentStepIndex = 0; // Track the current step
 	private int[][][] dp; // 3D DP table for scores
 	private boolean isGameStarted = false;
+	private Main main;
+	Text currentPlayerLabel;
 
-	public PlayWithComputerScene(int[] coins) {
+	public PlayWithComputerScene(int[] coins, Main main) {
 		this.coins = coins;
 		this.coinButtons = new Button[coins.length];
 		this.steps = new Move[coins.length]; // Array size equals the number of coins
+		this.main = main; // Ensure main is assigned
+
 	}
 
-	public Scene createScene(Stage primaryStage, OptimalGameInterface mainGameScene) {
+	public VBox createLayout() {
 		// Initialize Buttons Early
 		startButton = createStyledButton("Start");
 		showResultsButton = createStyledButton("Show Results");
@@ -52,13 +57,18 @@ public class PlayWithComputerScene {
 		playAgainButton.setVisible(false);
 		showDbTableBt.setVisible(false);
 
-		// Header Label
-		Label header = new Label("Optimal Game: Player vs Computer");
-		header.setStyle(
-				"-fx-font-size: 24px; -fx-font-weight: bold;-fx-text-border-color: White; -fx-text-fill: #FFD700;");
+		// Header Text with Stroke
+		Text header = new Text("Optimal Game: Player vs Computer");
+		header.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+		header.setFill(Color.RED); // Fill color
+		header.setStroke(Color.WHITE); // Stroke color
+		header.setStrokeWidth(1); // Width of the stroke
 
-		currentPlayerLabel = new Label("Current Player: Player");
+		currentPlayerLabel = new Text("Current Player:");
 		currentPlayerLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: #FFD700;");
+		currentPlayerLabel.setStroke(Color.WHITE); // Stroke color
+		currentPlayerLabel.setStrokeWidth(0.5); // Width of the stroke
+		currentPlayerLabel.setVisible(false); // Initially hidden
 
 		playerScoreLabel = new Label("Player Score:");
 		playerScoreLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: #800080;"); // Purple for player
@@ -69,37 +79,6 @@ public class PlayWithComputerScene {
 		// Coin Buttons
 		HBox coinHBox = new HBox(10);
 		coinHBox.setAlignment(Pos.CENTER);
-
-		// Check if coins exceed the limit
-		boolean exceedsLimit = coins.length > 10;
-		if (exceedsLimit) {
-			// Display warning alert
-			Alert alert = new Alert(Alert.AlertType.WARNING);
-			alert.setTitle("Too Many Coins");
-			alert.setHeaderText("Coins Limit Exceeded");
-			alert.setContentText(
-					"The number of coins exceeds the limit for visual display. However, the results will still be calculated.");
-
-			// Prevent the alert from being dismissed until acknowledged
-			alert.getButtonTypes().clear();
-			alert.getButtonTypes().add(ButtonType.OK);
-			alert.showAndWait();
-		}
-
-		// Always generate coin buttons
-		for (int i = 0; i < coins.length; i++) {
-			coinButtons[i] = createCoinButton(coins[i], i);
-			if (!exceedsLimit) {
-				// Add buttons to the HBox only if within the limit
-				coinHBox.getChildren().add(coinButtons[i]);
-			}
-		}
-
-		// Disable the HBox if exceedsLimit is true (prevents interaction)
-		if (exceedsLimit) {
-			coinHBox.setVisible(false); // Hide the coin display
-			coinHBox.setManaged(false); // Exclude the HBox from layout calculations
-		}
 
 		// Ensure "Show Table" and "Play Again" buttons are always visible
 		playAgainButton.setVisible(true);
@@ -134,35 +113,86 @@ public class PlayWithComputerScene {
 			playAgainButton.setVisible(true);
 			showDbTableBt.setVisible(true);
 		});
-		finalResultBt.setOnAction(e -> showFinalResult(primaryStage));
+		finalResultBt.setOnAction(e -> main.setLayout(showFinalResult()));
 		showStepsBt.setOnAction(e -> replaySteps()); // Show steps dynamically
 		playAgainButton.setOnAction(e -> {
-			OptimalGameInterface mainInterface = new OptimalGameInterface();
-			primaryStage.setScene(mainInterface.mainScene());
+			MainMenuScene mainMenuScene = new MainMenuScene(main);
+			main.setLayout(mainMenuScene.createLayout());
 		});
 		showDbTableBt.setOnAction(e -> {
 			if (isGameStarted) { // Ensure the game has started before showing the table
-				showDpTable(primaryStage, dp, coins, primaryStage.getScene());
+				Stage primaryStage = (Stage) showDbTableBt.getScene().getWindow(); // Get the current stage
+				showDpTable(primaryStage, dp, coins, showDbTableBt.getScene());
 			}
 		});
 
-		// Layout configuration		
+		// Check if coins exceed the limit
+		boolean exceedsLimit = coins.length > 11;
+		if (exceedsLimit) {
+			// Display warning alert
+			Alert alert = new Alert(Alert.AlertType.WARNING);
+			alert.setTitle("Too Many Coins");
+			alert.setHeaderText("Coins Limit Exceeded");
+			alert.setContentText(
+					"The number of coins exceeds the limit for visual display. However, the results will still be calculated.");
+
+			// Prevent the alert from being dismissed until acknowledged
+			alert.getButtonTypes().clear();
+			alert.getButtonTypes().add(ButtonType.OK);
+			alert.showAndWait();
+			// Hide or disable the showSteps button
+
+		}
+
+		// Always generate coin buttons
+		for (int i = 0; i < coins.length; i++) {
+			coinButtons[i] = createCoinButton(coins[i], i);
+			if (!exceedsLimit) {
+				// Add buttons to the HBox only if within the limit
+				coinHBox.getChildren().add(coinButtons[i]);
+			}
+		}
+
+		// Disable the HBox if exceedsLimit is true (prevents interaction)
+		if (exceedsLimit) {
+			coinHBox.setVisible(false); // Hide the coin display
+			coinHBox.setManaged(false); // Exclude the HBox from layout calculations
+
+			// Hide the player and computer areas when exceeding the limit
+			playerArea.setVisible(false);
+			playerArea.setManaged(false); // Exclude it from layout calculations
+
+			computerArea.setVisible(false);
+			computerArea.setManaged(false); // Exclude it from layout calculations
+
+			showStepsBt.setVisible(false);
+			showStepsBt.setManaged(false); // Exclude it from layout calculations
+		}
+		// Layout configuration
 		HBox mainLayout = new HBox(50, playerArea, coinHBox, computerArea);
 		mainLayout.setAlignment(Pos.CENTER);
 
 		HBox actionButtons = new HBox(10, playAgainButton, showDbTableBt);
 		actionButtons.setAlignment(Pos.CENTER);
 
-		VBox controls = new VBox(10, startButton, showResultsButton, finalResultBt, showStepsBt, actionButtons);
+		HBox hbox = new HBox(20);
+		hbox.setAlignment(Pos.CENTER);
+		hbox.setPadding(new Insets(10));
+		hbox.getChildren().addAll(finalResultBt, showResultsButton, showStepsBt);
+
+		VBox controls = new VBox(10, startButton, hbox, actionButtons);
 		controls.setAlignment(Pos.CENTER);
 
 		VBox layout = new VBox(20, header, currentPlayerLabel, mainLayout, playerScoreLabel, computerScoreLabel,
 				controls);
 		layout.setAlignment(Pos.CENTER);
-		layout.setPadding(new Insets(30));
+		layout.setPadding(new Insets(10));
 		layout.setStyle("-fx-background-color: #D3D3D3;"); // Dark gray background
 
-		return new Scene(layout, 1200, 800);
+		layout.setMinHeight(1200);
+		layout.setMinWidth(1500);
+
+		return layout;
 	}
 
 	private Button createCoinButton(int value, int index) {
@@ -258,7 +288,7 @@ public class PlayWithComputerScene {
 				}
 			}
 		}
-		System.out.println(playerScore);
+		// System.out.println(playerScore);
 
 		// Backtrack to find the chosen coins for both players
 		int start = 0, end = n - 1;
@@ -266,33 +296,45 @@ public class PlayWithComputerScene {
 		int moveIndex = 0; // Track steps
 
 		while (start <= end && start < n && end >= 0) {
-		    int selectedIndex;
-		    if (start + 1 < n && dp[start][end][0] - coins[start] == dp[start + 1][end][1]) {
-		        selectedIndex = start;
-		        start++;
-		    } else if (end - 1 >= 0) {
-		        selectedIndex = end;
-		        end--;
-		    } else {
-		        break; // Exit if bounds are exceeded
-		    }
+			int selectedIndex;
+			if (start + 1 < n && dp[start][end][0] - coins[start] == dp[start + 1][end][1]) {// Choosing the Leftmost
+																								// Coin (coins[start])
+// for first step --> check if dp[1][n][0] - coins[0](choosing left) =?= dp[1][n][2](optimal for him)
+				/*
+				 * Coins= [3, 9, 1, 2] Current player’s score: 11, opponent score = 4 check
+				 * dp[1][3][0]-coins[0] (11-3) =?=4 No so the first player picks the rightMost
+				 * Coin =2
+				 */
+				selectedIndex = start;
+				start++;
+			} else if (end - 1 >= 0) {// // Choose the rightmost coin
+				selectedIndex = end;
+				end--;
+			} else {
+				break; // Exit if bounds are exceeded
+			}
 
-		    // Move coin to the respective area
-		    moveCoinToArea(selectedIndex, firstPlayerTurn);
+			// Move coin to the respective area
+			moveCoinToArea(selectedIndex, firstPlayerTurn);
 
-		    // Record the step
-		    steps[moveIndex++] = new Move(firstPlayerTurn, selectedIndex, coins[selectedIndex]);
+			// Record the step
+			steps[moveIndex++] = new Move(firstPlayerTurn, selectedIndex, coins[selectedIndex]);
 
-		    // Update scores
-		    if (firstPlayerTurn) {
-		        playerScore += coins[selectedIndex];
-		        playerScoreLabel.setText("Player Score: " + playerScore);
-		    } else {
-		        computerScore += coins[selectedIndex];
-		        computerScoreLabel.setText("Computer Score: " + computerScore);
-		    }
+//		    // Update scores
+//		    if (firstPlayerTurn) {
+//		    	System.out.println("index: "+selectedIndex);
+//		        playerScore += coins[selectedIndex];
+//		        playerScoreLabel.setText("Player Score: " + playerScore);
+//				System.out.println("Player: "+playerScore);
+//
+//		    } else {
+//		        computerScore += coins[selectedIndex];
+//		        computerScoreLabel.setText("Computer Score: " + computerScore);
+//				System.out.println("computerScore: "+computerScore);
+//
+//		    }
 
-		    firstPlayerTurn = !firstPlayerTurn; // Switch turns
+			firstPlayerTurn = !firstPlayerTurn; // Switch turns
 		}
 
 		currentStepIndex = moveIndex; // Update the total number of moves
@@ -319,17 +361,22 @@ public class PlayWithComputerScene {
 			return;
 		}
 
-		PauseTransition pause = new PauseTransition(Duration.seconds(1));
+		currentPlayerLabel.setVisible(true); // Make label visible when replay starts
+
+		PauseTransition pause = new PauseTransition(Duration.seconds(1));// delay of 1 second between consecutive steps.
 		int[] index = { 0 }; // Use an array to track the current step
 
 		pause.setOnFinished(event -> {
 			if (index[0] < currentStepIndex) {
 				Move move = steps[index[0]];
+				currentPlayerLabel.setText(move.isPlayer ? "Current Player: Player" : "Current Player: Computer");
 				highlightCoin(move.index, move.isPlayer ? "#800080" : "#008000"); // Purple for player, green for
 																					// computer
 				moveCoinToArea(move.index, move.isPlayer);
 				index[0]++;
 				pause.playFromStart(); // Continue to the next step
+			} else {
+				currentPlayerLabel.setVisible(false); // Hide the label after replay finishes
 			}
 		});
 
@@ -374,7 +421,7 @@ public class PlayWithComputerScene {
 				.removeIf(node -> node instanceof Label && !((Label) node).getText().equals("Computer's Coins"));
 	}
 
-	private void showFinalResult(Stage primaryStage) {
+	private VBox showFinalResult() {
 		// Create a VBox layout for the final result
 		VBox resultLayout = new VBox(20);
 		resultLayout.setPadding(new Insets(30));
@@ -405,18 +452,18 @@ public class PlayWithComputerScene {
 			winnerLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #FFFF00;"); // Yellow text
 		}
 
-		// Add a button to return to the main scene
-		Button backButton = new Button("Back to Main Menu");
+		// Back button to return to PlayWithComputerScene
+		Button backButton = new Button("Back");
 		backButton.setStyle(
 				"-fx-background-color: #FFD700; -fx-font-weight: bold; -fx-text-fill: black; -fx-padding: 10px;");
-		backButton.setOnAction(e -> primaryStage.setScene(createScene(primaryStage, null)));
+		backButton.setOnAction(e -> {
+	        main.setLayout(this.createLayout());
+		});
 
 		// Add all elements to the layout
 		resultLayout.getChildren().addAll(titleLabel, playerResultLabel, computerResultLabel, winnerLabel, backButton);
 
-		// Create and set the new scene
-		Scene resultScene = new Scene(resultLayout, 800, 600);
-		primaryStage.setScene(resultScene);
+		return resultLayout;
 	}
 
 	private void showDpTable(Stage primaryStage, int[][][] dp, int[] coins, Scene currentScene) {
@@ -474,7 +521,7 @@ public class PlayWithComputerScene {
 				"-fx-background-color: #FFD700; -fx-font-weight: bold; -fx-text-fill: black; -fx-padding: 10px;");
 		backButton.setOnAction(e -> {
 			try {
-				primaryStage.setScene(currentScene);
+				primaryStage.setScene(currentScene); // Restore the previous scene
 			} catch (Exception ex) {
 				ex.printStackTrace(); // Log errors
 				Alert alert = new Alert(Alert.AlertType.ERROR, "An error occurred. Please restart the game.");
