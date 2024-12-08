@@ -2,37 +2,30 @@ package application;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleGroup;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
-import javafx.scene.layout.CornerRadii;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
-import javafx.stage.Stage;
 
 public class PlayerNamesInputScene {
 
-    private int[] coins;
-    private TextField playerOneTf, playerTwoTf;
-    private Label errorLb, firstTurnPlayerLb;
-    private RadioButton playerOneRb, playerTwoRb;
-    private String firstPlayer;
+    private int[] coins; // Array of coin values
+    private TextField playerOneTf, playerTwoTf; // Text fields for player names
+    private Label errorLb, firstTurnPlayerLb; // Error and first-turn player labels
+    private RadioButton playerOneRb, playerTwoRb; // Radio buttons for first turn selection
+    private String firstPlayer; // To track the first player
+    private Main mainGameScene; // Reference to the main application class
 
-    public PlayerNamesInputScene(int[] coins, OptimalGameInterface mainGameScene) {
+    public PlayerNamesInputScene(int[] coins, Main mainGameScene) {
         this.coins = coins;
+        this.mainGameScene = mainGameScene;
     }
 
-    public Scene createScene(Stage primaryStage, OptimalGameInterface mainGameScene, PlayingWayScene playingWayScene) {
+    public VBox createLayout() {
         // Header Label
         Label headLabel = new Label("Enter Player Names");
         headLabel.setFont(Font.font("Arial", 24));
-        headLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #FFD700;"); // Golden text color
+        headLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #FFD700;");
 
         // TextFields for player names
         playerOneTf = createStyledTextField("Player 1 Name");
@@ -62,15 +55,14 @@ public class PlayerNamesInputScene {
                 + "-fx-border-color: #FFA500; -fx-border-width: 2px; -fx-border-radius: 10px;");
 
         nextBt.setOnAction(e -> {
-            errorLb.setText("");
+            errorLb.setText(""); // Clear any previous error message
             String playerOneName = playerOneTf.getText();
             String playerTwoName = playerTwoTf.getText();
 
             if (checkFilledFields() && toggleGroup.getSelectedToggle() != null) {
                 firstPlayer = toggleGroup.getSelectedToggle() == playerOneRb ? playerOneName : playerTwoName;
-                TwoPlayersScene twoPlayersScene = new TwoPlayersScene(coins, playerOneName, playerTwoName, playingWayScene);
-                primaryStage.setScene(twoPlayersScene.createScene(primaryStage, mainGameScene, firstPlayer));
-
+                // Navigate to the TwoPlayersScene
+                mainGameScene.setLayout(new TwoPlayersScene(coins, playerOneName, playerTwoName, mainGameScene).createLayout(firstPlayer));
             } else {
                 errorLb.setText("Please Fill All Fields and Select the First Player!");
             }
@@ -81,7 +73,7 @@ public class PlayerNamesInputScene {
         backBt.setStyle("-fx-background-color: #FFD700; -fx-text-fill: black; -fx-font-weight: bold; "
                 + "-fx-font-size: 16px; -fx-background-radius: 10px; -fx-padding: 10px 20px; "
                 + "-fx-border-color: #FFA500; -fx-border-width: 2px; -fx-border-radius: 10px;");
-        backBt.setOnAction(e -> primaryStage.setScene(playingWayScene.createScene(primaryStage, mainGameScene)));
+        backBt.setOnAction(e -> mainGameScene.setLayout(new PlayingWayScene(coins,mainGameScene).createLayout()));
 
         // Layout
         VBox layout = new VBox(20, headLabel, playerOneTf, playerTwoTf, firstTurnPlayerLb, playerOneRb, playerTwoRb, errorLb, nextBt, backBt);
@@ -89,7 +81,7 @@ public class PlayerNamesInputScene {
         layout.setPadding(new Insets(30));
         layout.setBackground(new Background(new BackgroundFill(Color.web("#2F4F4F"), CornerRadii.EMPTY, Insets.EMPTY)));
 
-        return new Scene(layout, 500, 500);
+        return layout;
     }
 
     // Helper method to style TextFields consistently
@@ -99,9 +91,9 @@ public class PlayerNamesInputScene {
         textField.setStyle("-fx-background-color: #333; -fx-text-fill: white; -fx-background-radius: 10px; "
                 + "-fx-font-size: 16px; -fx-padding: 8px 12px;");
         textField.setOnMouseEntered(e -> textField.setStyle("-fx-background-color: #555; -fx-text-fill: white; "
-                + "-fx-background-radius: 10px; -fx-font-size: 16px; " + "-fx-padding: 8px 12px;"));
+                + "-fx-background-radius: 10px; -fx-font-size: 16px; -fx-padding: 8px 12px;"));
         textField.setOnMouseExited(e -> textField.setStyle("-fx-background-color: #333; -fx-text-fill: white; "
-                + "-fx-background-radius: 10px; -fx-font-size: 16px; " + "-fx-padding: 8px 12px;"));
+                + "-fx-background-radius: 10px; -fx-font-size: 16px; -fx-padding: 8px 12px;"));
         return textField;
     }
 
