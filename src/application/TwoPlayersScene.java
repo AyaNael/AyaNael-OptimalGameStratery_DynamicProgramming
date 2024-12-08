@@ -2,13 +2,11 @@ package application;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
 
 public class TwoPlayersScene {
 
@@ -28,19 +26,17 @@ public class TwoPlayersScene {
     private int startIndex = 0; // Initial edge index
     private int endIndex; // Ending edge index
     private Button playAgainBt;
-    private PlayingWayScene playingWayScene; // Reference to PlayingWayScene
-    private OptimalGameInterface mainGameScene;
+    private Main mainGameScene;
 
-    public TwoPlayersScene(int[] coins, String playerOneName, String playerTwoName, PlayingWayScene playingWayScene) {
+    public TwoPlayersScene(int[] coins, String playerOneName, String playerTwoName, Main mainGameScene) {
         this.coins = coins;
         this.playerOneName = playerOneName;
         this.playerTwoName = playerTwoName;
         this.endIndex = coins.length - 1; // Set initial end index
-        this.playingWayScene = playingWayScene;
-
+        this.mainGameScene = mainGameScene;
     }
 
-    public Scene createScene(Stage primaryStage, OptimalGameInterface mainGameScene, String firstPlayer) {
+    public BorderPane createLayout(String firstPlayer) {
         if (coins == null || coins.length == 0) {
             throw new IllegalStateException("Coins array cannot be null or empty.");
         }
@@ -49,11 +45,6 @@ public class TwoPlayersScene {
 
         currentPlayerLabel = new Label("Current Player: " + firstPlayer);
         currentPlayerLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #FFD700;");
-        System.out.println("Initial Current Player: " + firstPlayer);
-
-        // Determine the initial turn
-        isPlayerOneTurn = firstPlayer.equals(playerOneName);
-        System.out.println("Is Player One's Turn? " + isPlayerOneTurn);
 
         // Add scoreboxes
         Label playerOneTitle = new Label(playerOneName + " Score:");
@@ -73,8 +64,6 @@ public class TwoPlayersScene {
         playerTwoScoreBox = new VBox(10, playerTwoTitle, playerTwoCoinsBox, playerTwoTotalScore);
         playerTwoScoreBox.setAlignment(Pos.CENTER);
 
-        playerTwoScoreBox.setPadding(new Insets(20));
-
         // Coin container using GridPane
         GridPane coinGrid = new GridPane();
         coinGrid.setAlignment(Pos.CENTER);
@@ -83,21 +72,22 @@ public class TwoPlayersScene {
 
         for (int i = 0; i < coins.length; i++) {
             Button coinButton = createCoinButton(coins[i], i);
-            coinGrid.add(coinButton, i % 10, i / 10); // Place buttons in rows of 8
+            coinGrid.add(coinButton, i % 10, i / 10); // Place buttons in rows of 10
         }
 
+        // Play Again Button
         playAgainBt = new Button("Play Again");
         playAgainBt.setStyle("-fx-background-color: #32CD32; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px;");
         playAgainBt.setOnAction(e -> {
-            PlayerNamesInputScene playerNamesInputScene = new PlayerNamesInputScene(coins, mainGameScene);
-            primaryStage.setScene(playerNamesInputScene.createScene(primaryStage, mainGameScene, playingWayScene)); // Pass the PlayingWayScene instance
+            MainMenuScene mainMenuScene = new MainMenuScene(mainGameScene);
+            mainGameScene.setLayout(mainMenuScene.createLayout());
         });
-
         playAgainBt.setVisible(false); // Initially hidden until the game ends
 
         VBox mainCenterLayout = new VBox(20, currentPlayerLabel, coinGrid);
         mainCenterLayout.setAlignment(Pos.CENTER);
 
+        // Main layout
         BorderPane mainLayout = new BorderPane();
         mainLayout.setRight(playerTwoScoreBox);
         mainLayout.setLeft(playerOneScoreBox);
@@ -107,12 +97,12 @@ public class TwoPlayersScene {
         mainLayout.setPadding(new Insets(50));
         mainLayout.setStyle("-fx-background-color: #2F4F4F;");
 
-        return new Scene(mainLayout, 1000, 600);
+        return mainLayout;
     }
 
     private Button createCoinButton(int coinValue, int index) {
         Button coinButton = new Button(String.valueOf(coinValue));
-        coinButton.setStyle("-fx-background-color: #FFD700; -fx-text-fill: black; -fx-font-weight: bold;-fx-background-radius: 25; ");
+        coinButton.setStyle("-fx-background-color: #FFD700; -fx-text-fill: black; -fx-font-weight: bold;-fx-background-radius: 25;");
         coinButton.setPrefSize(50, 50);
 
         coinButton.setOnMouseClicked(event -> handleCoinClick(index, coinButton));
